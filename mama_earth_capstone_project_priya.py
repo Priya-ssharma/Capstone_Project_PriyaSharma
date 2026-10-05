@@ -18,13 +18,7 @@ up = files.upload()
 !ls data
 
 """Part 1, Task 1: SCHEMA FILE"""
-
-# Commented out IPython magic to ensure Python compatibility.
-# %%writefile sql/schema.sql
-# DROP TABLE IF EXISTS orders;
-# DROP TABLE IF EXISTS products;
-# DROP TABLE IF EXISTS customers;
-# 
+ 
 DROP TABLE IF EXISTS orders;
 DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS customers;
