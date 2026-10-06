@@ -1,6 +1,6 @@
 -- Part 1, Task 3: reports (MySQL).
 
-USE priyadb;
+USE priyadb6;
 
 -- (a) Order totals
 
