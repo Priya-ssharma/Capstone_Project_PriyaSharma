@@ -1,7 +1,8 @@
 analysis/clean_and_eda.py
 
 import pandas as pd
-
+import os
+import json
 
 # Task 1 - Load and inspect
 
@@ -352,7 +353,62 @@ print(
     "March 2026 is the genuine peak month."
 )
 
+# Part 3 - Export verified findings
 
+os.makedirs("narrator", exist_ok=True)
+
+findings = {
+    "cleaned_total_revenue_inr": round(cleaned_total_revenue, 2),
+
+    "raw_total_revenue_inr": round(raw_total_revenue, 2),
+
+    "duplicate_reconciliation_delta_inr": round(
+        reconciliation_delta, 2
+    ),
+
+    "return_rate_by_payment": {
+        "COD": float(return_rate.loc["COD", "return_rate_pct"]),
+        "CARD": float(return_rate.loc["CARD", "return_rate_pct"]),
+        "UPI": float(return_rate.loc["UPI", "return_rate_pct"])
+    },
+
+    "highest_risk_segment": {
+        "payment_method": highest_risk[0],
+        "city_tier": int(highest_risk[1]),
+        "return_rate_pct": float(highest_risk_rate)
+    },
+
+    "true_peak_month": {
+        "month": monthly_revenue_excluding.idxmax(),
+        "revenue_inr": round(
+            float(monthly_revenue_excluding.max()), 2
+        )
+    },
+
+    "outlier_inflated_month": {
+        "month": monthly_revenue_including.idxmax(),
+        "apparent_revenue_inr": round(
+            float(monthly_revenue_including.max()), 2
+        ),
+        "corrected_revenue_inr": round(
+            float(
+                monthly_revenue_excluding.loc[
+                    monthly_revenue_including.idxmax()
+                ]
+            ),
+            2
+        )
+    }
+}
+
+with open(
+    "narrator/findings.json",
+    "w",
+    encoding="utf-8"
+) as f:
+    json.dump(findings, f, indent=2)
+
+print("\nVerified findings exported to narrator/findings.json")
 
 
 
