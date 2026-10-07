@@ -8,6 +8,10 @@ import pandas as pd
 customers = pd.read_csv("data/customers.csv")
 products = pd.read_csv("data/products.csv")
 orders = pd.read_csv("data/orders.csv")
+print("TASK 1 — DATA LOADING")
+print("Customers shape:", customers.shape)
+print("Products shape:", products.shape)
+print("Orders shape:", orders.shape)
 
 # Task 2 - Standardize payment_method casing
 
@@ -198,6 +202,15 @@ return_rate["return_rate_pct"] = (
 
 print("\nReturn rate by payment method:")
 print(return_rate)
+
+cod_rate = return_rate.loc["COD", "return_rate_pct"]
+card_rate = return_rate.loc["CARD", "return_rate_pct"]
+upi_rate = return_rate.loc["UPI", "return_rate_pct"]
+
+if cod_rate > card_rate and cod_rate > upi_rate:
+    print("\nHypothesis: Confirmed")
+else:
+    print("\nHypothesis: Busted")
 
 # Task 8 - Multi-level segmentation 
 
