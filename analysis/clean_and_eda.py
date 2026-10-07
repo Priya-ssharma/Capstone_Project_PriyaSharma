@@ -1,5 +1,3 @@
-analysis/clean_and_eda.py
-
 import pandas as pd
 import os
 import json
