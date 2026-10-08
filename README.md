@@ -13,6 +13,9 @@ The project uses three main stages:
 3. GenAI-powered business insight narration
 
 ---
+## Architecture Diagram
+
+[View Interactive GitDiagram](https://gitdiagram.com/priya-ssharma/capstone_project_priyasharma)
 
 # Part 1 — SQL Analysis
 
