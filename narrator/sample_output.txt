@@ -1,0 +1,25 @@
+Situation
+
+Mamaearth's verified analysis shows cleaned revenue of ₹97,358.30
+against raw revenue of ₹99,860.20.
+
+Complication
+
+COD recorded a 44.4% return rate, compared with
+CARD at 14.7% and UPI at 18.9%.
+The highest-risk segment was COD in Tier-2,
+with a 54.5% return rate.
+
+Duplicate records created a reconciliation delta of ₹2,501.90.
+January appeared to generate ₹29,582.10,
+but its corrected revenue was ₹11,637.10
+after excluding quantity outliers.
+
+Resolution
+
+Regional operations should prioritize COD risk in Tier-2.
+Finance should use the cleaned figures and reconcile duplicate records
+before final reporting.
+
+The verified peak month was March (2026-03), with revenue of
+₹20,318.90.
