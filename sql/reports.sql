@@ -124,7 +124,7 @@ ORDER BY category_revenue DESC;
 
 SELECT * FROM customers WHERE name LIKE 'A%';
 
--- Output: 9 rows
+-- Output: 10 rows
 -- C001 | Aarav
 -- C003 | Aditi
 -- C004 | Ananya
