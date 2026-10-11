@@ -1,25 +1,23 @@
-
 import json
 import os
+from pathlib import Path
 
 from google import genai
 from google.genai import types
 
 
-FINDINGS_PATH = "narrator/findings.json"
-SAMPLE_OUTPUT_PATH = "narrator/sample_output.txt"
+# Resolve paths relative to this script, not the current directory.
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+FINDINGS_PATH = PROJECT_ROOT / "narrator" / "findings.json"
+SAMPLE_OUTPUT_PATH = PROJECT_ROOT / "narrator" / "sample_output.txt"
 
 
 def generate_scr_narrative_offline(findings: dict) -> dict:
-    """
-    Deterministic offline fallback.
-    Works without an API key or internet.
-    """
+    """Generate a deterministic narrative from verified findings."""
 
     cleaned = findings["cleaned_total_revenue_inr"]
     raw = findings["raw_total_revenue_inr"]
     delta = findings["duplicate_reconciliation_delta_inr"]
-
     rates = findings["return_rate_by_payment"]
     risk = findings["highest_risk_segment"]
     peak = findings["true_peak_month"]
@@ -56,15 +54,12 @@ The verified peak month was March ({peak["month"]}), with revenue of
     return {
         "status": "success",
         "narrative": narrative.strip(),
-        "tokens": None
+        "tokens": None,
     }
 
 
 def generate_scr_narrative(findings: dict) -> dict:
-    """
-    Generate an SCR narrative using Gemini.
-    Returns a structured dictionary for success and error cases.
-    """
+    """Try Gemini and return a structured result."""
 
     api_key = os.getenv("GEMINI_API_KEY")
 
@@ -72,57 +67,37 @@ def generate_scr_narrative(findings: dict) -> dict:
         return {
             "status": "error",
             "narrative": None,
-            "message": "GEMINI_API_KEY is not configured."
+            "message": "GEMINI_API_KEY is not configured.",
         }
 
-    system_instruction = """
-You are a senior data analyst writing for Mamaearth's regional ops
-and finance heads.
-
-Write a concise business narrative with exactly these three labeled sections:
-
-Situation
-Complication
-Resolution
-
-Every numeric value in the output must come only from the supplied
-findings dictionary.
-
-Do not invent statistics, percentages, counts, dates, months,
-or monetary values.
-
-Preserve every supplied numeric value exactly.
-"""
-
-    contents = f"""
-Write a business narrative of approximately 250 words using only
-the following verified findings:
+    prompt = f"""
+Write a concise business narrative for Mamaearth regional operations
+and finance using only these verified findings.
 
 {json.dumps(findings, indent=2)}
 
-The narrative must contain exactly these labeled sections:
-
+Use exactly these three labeled sections:
 Situation
 Complication
 Resolution
 
-Do not introduce any number that is not present in the findings.
+Include the relevant verified revenue, return-rate, reconciliation,
+outlier-correction, and peak-month findings. Do not invent figures.
 """
 
     try:
         client = genai.Client(
             api_key=api_key,
-            http_options=types.HttpOptions(timeout=30000)
+            http_options=types.HttpOptions(timeout=30000),
         )
 
         response = client.models.generate_content(
             model="gemini-3.8-flash",
-            contents=contents,
+            contents=prompt,
             config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
                 temperature=0.0,
-                max_output_tokens=400
-            )
+                max_output_tokens=700,
+            ),
         )
 
         narrative = getattr(response, "text", None)
@@ -131,133 +106,92 @@ Do not introduce any number that is not present in the findings.
             return {
                 "status": "error",
                 "narrative": None,
-                "message": "Gemini returned an empty narrative."
+                "message": "Gemini returned an empty response.",
             }
-
-        tokens = getattr(
-            getattr(response, "usage_metadata", None),
-            "total_token_count",
-            None
-        )
 
         return {
             "status": "success",
             "narrative": narrative.strip(),
-            "tokens": tokens
+            "tokens": getattr(
+                getattr(response, "usage_metadata", None),
+                "total_token_count",
+                None,
+            ),
         }
 
     except Exception as err:
         return {
             "status": "error",
             "narrative": None,
-            "message": str(err)
+            "message": str(err),
         }
 
 
 def check_required_figures(narrative: str) -> bool:
-    """
-    Task 5 numeric accuracy checklist.
-    Checks the five required figures.
-    """
+    """Check that the five required figures occur in the narrative."""
 
-    normalized = narrative.replace(",", "")
+    normalized = narrative.replace(",", "").replace("₹", "").lower()
 
     checks = [
-        (
-            "Cleaned revenue: 97,358.30",
-            "97358.3" in normalized
-        ),
-        (
-            "COD return rate: 44.4%",
-            "44.4" in normalized
-        ),
-        (
-            "Highest-risk COD + Tier 2: 54.5%",
-            "54.5" in normalized
-        ),
-        (
-            "Duplicate reconciliation delta: 2,501.90",
-            "2501.9" in normalized
-        ),
+        ("Cleaned revenue: 97,358.30", "97358.30" in normalized),
+        ("COD return rate: 44.4%", "44.4%" in normalized),
+        ("Highest-risk rate: 54.5%", "54.5%" in normalized),
+        ("Reconciliation delta: 2,501.90", "2501.90" in normalized),
         (
             "March peak: 20,318.90",
-            "march" in narrative.lower()
-            and "20318.9" in normalized
-        )
+            "march" in normalized and "20318.90" in normalized,
+        ),
     ]
 
     print("\nNumeric accuracy checklist:")
-
     for label, passed in checks:
         print(f"{label}: {'PASS' if passed else 'FAIL'}")
 
-    all_passed = all(passed for _, passed in checks)
+    failed = [label for label, passed in checks if not passed]
 
-    assert all_passed, (
-        "Numeric accuracy checklist failed. "
-        "Check the saved narrative and findings."
-    )
+    if failed:
+        raise ValueError(
+            "Narrative failed required checks: " + "; ".join(failed)
+        )
 
     return True
 
 
 def main():
-    """
-    Generate, save, reload, and validate the SCR narrative.
-    """
-
-    # Load verified findings generated by Part 2.
-    with open(
-        FINDINGS_PATH,
-        "r",
-        encoding="utf-8"
-    ) as f:
-        findings = json.load(f)
+    with open(FINDINGS_PATH, "r", encoding="utf-8") as file:
+        findings = json.load(file)
 
     print("Generating SCR narrative...")
-
-    # Try Gemini first.
     result = generate_scr_narrative(findings)
 
-    # If Gemini fails, use the deterministic offline fallback.
-    if result["status"] == "error":
-        print(
-            "Gemini unavailable. "
-            "Using deterministic offline fallback."
-        )
-        print(f"Reason: {result.get('message', 'Unknown error')}")
+    # Fall back if Gemini errors or its response lacks required figures.
+    if result["status"] == "success":
+        try:
+            check_required_figures(result["narrative"])
+        except ValueError:
+            result["status"] = "error"
+            result["message"] = "Gemini response did not contain all required figures."
 
+    if result["status"] == "error":
+        print("Using verified offline fallback.")
+        print("Reason:", result.get("message", "Unknown error"))
         result = generate_scr_narrative_offline(findings)
 
     narrative = result["narrative"].strip()
 
-    # Save the narrative before validating it.
-    with open(
-        SAMPLE_OUTPUT_PATH,
-        "w",
-        encoding="utf-8"
-    ) as f:
-        f.write(narrative + "\n")
+    # Save first, then read the saved file and validate it.
+    SAMPLE_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    SAMPLE_OUTPUT_PATH.write_text(narrative + "\n", encoding="utf-8")
+
+    saved_narrative = SAMPLE_OUTPUT_PATH.read_text(encoding="utf-8")
 
     print("\n" + "=" * 60)
-    print("SCR NARRATIVE")
+    print("SAVED SCR NARRATIVE")
     print("=" * 60)
-    print(narrative)
+    print(saved_narrative)
 
-    print(f"\nSample output saved to {SAMPLE_OUTPUT_PATH}")
-
-    # Read the saved file back from disk.
-    with open(
-        SAMPLE_OUTPUT_PATH,
-        "r",
-        encoding="utf-8"
-    ) as f:
-        saved_narrative = f.read()
-
-    # Validate the actual saved output.
     check_required_figures(saved_narrative)
-
-    print("\nSaved narrative passed numeric accuracy checks.")
+    print("Saved narrative passed all numeric accuracy checks.")
 
 
 if __name__ == "__main__":
