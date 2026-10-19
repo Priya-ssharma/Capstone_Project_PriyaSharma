@@ -4,7 +4,7 @@
 USE priyadb6;
 
 
--- 1. Order totals
+-- Order totals
 -- Output:
 -- total_orders | total_revenue | avg_order_value
 -- 180          | 99860.20      | 554.78
@@ -17,7 +17,7 @@ FROM orders o
 JOIN products p ON o.product_id = p.product_id;
 
 
--- 2. COUNT(*) vs COUNT(column)
+-- COUNT(*) vs COUNT(column)
 -- Output:
 -- all_rows | rated_rows | unrated_rows
 -- 180      | 165        | 15
@@ -29,7 +29,7 @@ SELECT
 FROM orders;
 
 
--- 3. Customers with zero orders using LEFT JOIN
+-- Customers with zero orders using LEFT JOIN
 -- Output:
 -- customer_id | name
 -- C045        | Vihaan
@@ -41,7 +41,7 @@ GROUP BY c.customer_id, c.name
 HAVING COUNT(o.order_id) = 0;
 
 
--- 4. Customers with zero orders using NOT IN
+-- Customers with zero orders using NOT IN
 -- Output:
 -- customer_id | name
 -- C045        | Vihaan
@@ -55,7 +55,7 @@ WHERE customer_id NOT IN (
 );
 
 
--- 5. Return rate by city above 20%
+-- Return rate by city above 20%
 -- Output:
 -- city      | total_orders | returned_orders | return_rate_pct
 -- Jaipur    | 19           | 8               | 42.1
@@ -74,7 +74,7 @@ HAVING return_rate_pct > 20
 ORDER BY return_rate_pct DESC;
 
 
--- 6. Top 5 customers by spend
+-- Top 5 customers by spend
 -- Tie-break: customer_id ASC ensures consistent ordering when spending ties.
 -- Output:
 -- customer_id | name    | total_spend
@@ -96,7 +96,7 @@ ORDER BY total_spend DESC, c.customer_id ASC
 LIMIT 5;
 
 
--- 7. Customer spending ranks 3 to 5 using OFFSET
+-- Customer spending ranks 3 to 5 using OFFSET
 -- Tie-break: customer_id ASC ensures consistent ordering when spending ties.
 -- Output:
 -- customer_id | name  | total_spend
@@ -116,7 +116,7 @@ ORDER BY total_spend DESC, c.customer_id ASC
 LIMIT 3 OFFSET 2;
 
 
--- 8. Revenue by category
+-- Revenue by category
 -- Output:
 -- category     | order_count | category_revenue
 -- Haircare     | 54          | 44956.10
@@ -135,7 +135,7 @@ GROUP BY p.category
 ORDER BY category_revenue DESC;
 
 
--- 9. Customer names starting with A
+-- Customer names starting with A
 -- Output:
 -- customer_id | name
 -- C001        | Aarav
@@ -155,7 +155,7 @@ WHERE name LIKE 'A%'
 ORDER BY customer_id;
 
 
--- 10. Distinct acquisition sources
+-- Distinct acquisition sources
 -- Output:
 -- acquisition_source
 -- Ad
@@ -168,7 +168,7 @@ FROM customers
 ORDER BY acquisition_source;
 
 
--- 11. Add and update loyalty tier
+-- Add and update loyalty tier
 -- Run ALTER TABLE only once.
 -- If loyalty_tier already exists, skip the ALTER TABLE statement.
 
@@ -186,7 +186,7 @@ END;
 SET SQL_SAFE_UPDATES = 1;
 
 
--- 12. Count customers by loyalty tier
+-- Count customers by loyalty tier
 -- Output:
 -- loyalty_tier | customers
 -- Gold         | 28
